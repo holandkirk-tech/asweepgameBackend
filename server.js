@@ -11,6 +11,8 @@ const PORT = process.env.PORT || 3000;
 // Environment variables
 const {
   DATABASE_URL,
+  ADMIN_USERNAME = 'admin',
+  ADMIN_PASSWORD = 'thesecret',
   NODE_ENV = 'development'
 } = process.env;
 
@@ -21,12 +23,7 @@ const pool = new Pool({
 });
 
 // Middleware
-app.use(cors({
-  origin: NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.vercel.app'] 
-    : ['http://localhost:3000', 'http://localhost:5173'],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
 // Simplified - no sessions needed
@@ -127,12 +124,24 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
-// Simplified admin login - no real auth
-app.post('/admin/login', async (req, res) => {
-  res.json({
-    success: true,
-    message: 'Temp login - no auth required'
-  });
+// Admin login route (default: admin / thesecret via env vars)
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (
+    username === ADMIN_USERNAME &&
+    password === ADMIN_PASSWORD
+  ) {
+    return res.json({ success: true, message: 'Login successful' });
+  } else {
+    return res.status(401).json({ success: false, message: 'Invalid username or password' });
+  }
+});
+
+// Generate random 5-digit code
+app.get('/api/admin/generate-code', (req, res) => {
+  const code = Math.floor(10000 + Math.random() * 90000); // ensures 5-digit
+  res.json({ success: true, code });
 });
 
 // Generate spin codes - no auth needed
