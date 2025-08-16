@@ -11,10 +11,6 @@ const PORT = process.env.PORT || 3000;
 // Environment variables
 const {
   DATABASE_URL,
-  ADMIN_USERNAME = 'admin',
-  ADMIN_PASSWORD = 'changeme',
-  SESSION_SECRET = 'default-session-secret',
-  JWT_SECRET = 'default-jwt-secret',
   NODE_ENV = 'development'
 } = process.env;
 
@@ -33,8 +29,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Session storage (in production, use Redis or database)
-const sessions = new Map();
+// Simplified - no sessions needed
 
 // Spin wheel outcomes with weights
 const SPIN_OUTCOMES = [
@@ -48,9 +43,6 @@ const SPIN_OUTCOMES = [
 ];
 
 // Utility functions
-function generateSessionToken() {
-  return crypto.randomBytes(32).toString('hex');
-}
 
 function generateSpinCode() {
   return Math.floor(10000 + Math.random() * 90000).toString();
@@ -103,23 +95,7 @@ async function initializeDatabase() {
   }
 }
 
-// Authentication middleware
-function requireAuth(req, res, next) {
-  const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!sessionToken || !sessions.has(sessionToken)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  
-  const session = sessions.get(sessionToken);
-  if (Date.now() > session.expires) {
-    sessions.delete(sessionToken);
-    return res.status(401).json({ error: 'Session expired' });
-  }
-  
-  req.session = session;
-  next();
-}
+// No authentication - simplified for temp use
 
 // Routes
 // Health check
@@ -131,43 +107,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Admin login
+// Simplified admin login - no real auth
 app.post('/admin/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
-    }
-    
-    // Verify credentials
-    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    // Create session
-    const sessionToken = generateSessionToken();
-    const expires = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
-    
-    sessions.set(sessionToken, {
-      username: ADMIN_USERNAME,
-      expires,
-      createdAt: Date.now()
-    });
-    
-    res.json({
-      success: true,
-      token: sessionToken,
-      expiresIn: '24h'
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  res.json({
+    success: true,
+    message: 'Temp login - no auth required'
+  });
 });
 
-// Generate spin codes (admin only)
-app.post('/admin/generate', requireAuth, async (req, res) => {
+// Generate spin codes - no auth needed
+app.post('/admin/generate', async (req, res) => {
   try {
     const { count = 1 } = req.body;
     const codes = [];
@@ -202,8 +151,8 @@ app.post('/admin/generate', requireAuth, async (req, res) => {
   }
 });
 
-// Get all generated codes (admin only)
-app.get('/admin/codes', requireAuth, async (req, res) => {
+// Get all generated codes - no auth needed  
+app.get('/admin/codes', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -332,8 +281,8 @@ app.post('/spin/play', async (req, res) => {
   }
 });
 
-// Get spin results (admin only)
-app.get('/admin/results', requireAuth, async (req, res) => {
+// Get spin results - no auth needed
+app.get('/admin/results', async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     
@@ -365,13 +314,9 @@ app.get('/admin/results', requireAuth, async (req, res) => {
   }
 });
 
-// Admin logout
-app.post('/admin/logout', requireAuth, (req, res) => {
-  const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-  if (sessionToken) {
-    sessions.delete(sessionToken);
-  }
-  res.json({ success: true });
+// Admin logout - simplified
+app.post('/admin/logout', (req, res) => {
+  res.json({ success: true, message: 'Logged out' });
 });
 
 // Error handling middleware
