@@ -60,6 +60,28 @@ export const adminAPI = {
     return apiCall('/api/admin/generate-code', {
       method: 'GET'
     });
+  },
+
+  /**
+   * Get all spin results and codes with statistics
+   * @param {number} limit - Number of results to fetch (default: 50)
+   * @param {number} offset - Offset for pagination (default: 0)
+   * @returns {Promise<{success: boolean, results: Array, total: number, statistics: Object}>}
+   */
+  async getSpinResults(limit = 50, offset = 0) {
+    return apiCall(`/api/admin/spin-results?limit=${limit}&offset=${offset}`, {
+      method: 'GET'
+    });
+  },
+
+  /**
+   * Get detailed analytics including prize distribution and daily stats
+   * @returns {Promise<{success: boolean, prizeDistribution: Array, dailyStats: Array, codeStats: Object}>}
+   */
+  async getAnalytics() {
+    return apiCall('/api/admin/analytics', {
+      method: 'GET'
+    });
   }
 };
 

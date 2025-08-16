@@ -241,6 +241,110 @@ app.post('/api/player/spin', async (req, res) => {
   }
 });
 
+// Admin: get all spin results and codes
+app.get('/api/admin/spin-results', async (req, res) => {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+    
+    const result = await pool.query(`
+      SELECT 
+        c.code,
+        c.created_at as code_created,
+        c.expires_at,
+        c.is_used,
+        sr.prize,
+        sr.outcome,
+        sr.created_at as spin_time,
+        sr.id as spin_id
+      FROM codes c
+      LEFT JOIN spin_records sr ON c.id = sr.code_id
+      ORDER BY c.created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [parseInt(limit), parseInt(offset)]);
+    
+    // Get total count
+    const countResult = await pool.query('SELECT COUNT(*) as total FROM codes');
+    
+    // Calculate statistics
+    const statsResult = await pool.query(`
+      SELECT 
+        COUNT(sr.id) as total_spins,
+        COUNT(CASE WHEN sr.outcome = 'win' THEN 1 END) as total_wins,
+        SUM(sr.prize) as total_prize_amount,
+        AVG(sr.prize) as avg_prize
+      FROM spin_records sr
+    `);
+    
+    const stats = statsResult.rows[0];
+    
+    return res.json({
+      success: true,
+      results: result.rows,
+      total: parseInt(countResult.rows[0].total),
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      statistics: {
+        totalSpins: parseInt(stats.total_spins) || 0,
+        totalWins: parseInt(stats.total_wins) || 0,
+        totalPrizeAmount: parseInt(stats.total_prize_amount) || 0,
+        averagePrize: parseFloat(stats.avg_prize) || 0,
+        winRate: stats.total_spins > 0 ? (parseInt(stats.total_wins) / parseInt(stats.total_spins) * 100).toFixed(1) : 0
+      }
+    });
+  } catch (err) {
+    console.error('admin/spin-results error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch results' });
+  }
+});
+
+// Admin: get detailed analytics
+app.get('/api/admin/analytics', async (req, res) => {
+  try {
+    // Prize distribution analysis
+    const prizeDistribution = await pool.query(`
+      SELECT 
+        prize,
+        COUNT(*) as count,
+        (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM spin_records)) as percentage
+      FROM spin_records
+      GROUP BY prize
+      ORDER BY prize DESC
+    `);
+    
+    // Daily stats for the last 30 days
+    const dailyStats = await pool.query(`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as spins,
+        COUNT(CASE WHEN outcome = 'win' THEN 1 END) as wins,
+        SUM(prize) as total_prizes
+      FROM spin_records
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `);
+    
+    // Code usage stats
+    const codeStats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_codes,
+        COUNT(CASE WHEN is_used = true THEN 1 END) as used_codes,
+        COUNT(CASE WHEN expires_at < NOW() AND is_used = false THEN 1 END) as expired_codes
+      FROM codes
+    `);
+    
+    return res.json({
+      success: true,
+      prizeDistribution: prizeDistribution.rows,
+      dailyStats: dailyStats.rows,
+      codeStats: codeStats.rows[0]
+    });
+  } catch (err) {
+    console.error('admin/analytics error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+  }
+});
+
 // Generate spin codes - no auth needed
 app.post('/admin/generate', async (req, res) => {
   try {
