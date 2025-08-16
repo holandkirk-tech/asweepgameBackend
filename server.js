@@ -107,6 +107,26 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Database connection test
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({
+      status: 'ok',
+      time: result.rows[0].now,
+      database: 'Connected successfully',
+      environment: NODE_ENV
+    });
+  } catch (err) {
+    console.error('DB test failed:', err.message);
+    res.status(500).json({
+      status: 'error',
+      message: err.message,
+      database: 'Connection failed'
+    });
+  }
+});
+
 // Simplified admin login - no real auth
 app.post('/admin/login', async (req, res) => {
   res.json({
