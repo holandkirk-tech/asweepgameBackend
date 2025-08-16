@@ -1,0 +1,39 @@
+{
+  "name": "asweepgame-backend",
+  "version": "1.0.0",
+  "description": "AceSweeps Casino Spin Wheel Backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holandkirk-tech/asweepgameBackend.git"
+  },
+  "keywords": [
+    "casino",
+    "spin-wheel",
+    "backend",
+    "api"
+  ],
+  "author": "holandkirk-tech",
+  "license": "ISC",
+  "engines": {
+    "node": "20.x"
+  },
+  "bugs": {
+    "url": "https://github.com/holandkirk-tech/asweepgameBackend/issues"
+  },
+  "homepage": "https://github.com/holandkirk-tech/asweepgameBackend#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
